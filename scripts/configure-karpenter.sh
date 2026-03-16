@@ -8,7 +8,12 @@ if [[ $# -ne 1 ]]; then
 fi
 
 CLUSTER_NAME="$1"
-NODECLASS_FILE="platform/karpenter/base/ec2-nodeclass.yaml"
+SETTINGS_FILE="platform/karpenter/overlays/shared/karpenter-settings.env"
+
+if [[ ! -f "${SETTINGS_FILE}" ]]; then
+  echo "settings file not found: ${SETTINGS_FILE}"
+  exit 1
+fi
 
 set_value() {
   local file="$1"
@@ -18,7 +23,7 @@ set_value() {
   rm -f "${file}.bak"
 }
 
-set_value "${NODECLASS_FILE}" "role:[[:space:]]*KarpenterNodeRole-[^[:space:]]+" "role: KarpenterNodeRole-${CLUSTER_NAME}"
-set_value "${NODECLASS_FILE}" "karpenter\\.sh/discovery:[[:space:]]*[^[:space:]]+" "karpenter.sh/discovery: ${CLUSTER_NAME}"
+set_value "${SETTINGS_FILE}" "^CLUSTER_NAME=.*$" "CLUSTER_NAME=${CLUSTER_NAME}"
+set_value "${SETTINGS_FILE}" "^NODE_ROLE=.*$" "NODE_ROLE=KarpenterNodeRole-${CLUSTER_NAME}"
 
-echo "Updated Karpenter EC2NodeClass with cluster name: ${CLUSTER_NAME}"
+echo "Updated ${SETTINGS_FILE} with cluster name: ${CLUSTER_NAME}"

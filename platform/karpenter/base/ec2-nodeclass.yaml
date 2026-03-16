@@ -6,13 +6,13 @@ metadata:
     app.kubernetes.io/part-of: gitops-platform
 spec:
   amiFamily: AL2023
-  role: KarpenterNodeRole-__CLUSTER_NAME__
+  role: KarpenterNodeRole-placeholder
   subnetSelectorTerms:
     - tags:
-        karpenter.sh/discovery: __CLUSTER_NAME__
+        karpenter.sh/discovery: placeholder
   securityGroupSelectorTerms:
     - tags:
-        karpenter.sh/discovery: __CLUSTER_NAME__
+        karpenter.sh/discovery: placeholder
   amiSelectorTerms:
     - alias: al2023@latest
   tags:

@@ -112,7 +112,6 @@ Com isso, voce pode subir somente um modulo, por exemplo:
 
 - pre-requisito no modo standalone (sem `root-app`):
   - `kubectl apply -n argocd -f argocd/projects/platform-project.yaml`
-
 - somente Karpenter:
   - `kubectl apply -n argocd -f argocd/applications/platform-karpenter-app.yaml`
 - somente configuracao do Argo CD:

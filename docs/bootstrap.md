@@ -43,7 +43,7 @@ Terraform cria:
 - repositórios ECR
 - papéis IAM/IRSA
 - addons base (Argo CD, Argo Rollouts, Prometheus stack, ESO, ALB controller, Kyverno)
-- Karpenter (IRSA, fila de interrupcao Spot e controller via Helm)
+- Karpenter (controller + NodePool/EC2NodeClass via GitOps)
 - `root-app` inicial do Argo CD
 
 ## 4) Confirme handoff para GitOps
@@ -84,6 +84,6 @@ kubectl -n external-secrets get pods
 kubectl -n monitoring get pods
 kubectl -n argo-rollouts get pods
 kubectl -n karpenter get pods
-kubectl get nodepool
+kubectl get ec2nodeclass,nodepool,nodeclaims
 kubectl -n sample-api-dev get rollout sample-api
 ```

@@ -1,66 +1,55 @@
-# Karpenter (ArgoCD + Terraform)
+# Karpenter (ArgoCD + Kustomize parametrizado)
 
 ## Objetivo
 
-Integrar o Karpenter ao fluxo GitOps para:
+Configurar autoscaling de nós com foco em custo e eficiência:
 
-- reduzir custo com preferencia por Spot e fallback automatico para On-Demand
-- aumentar utilizacao dos nos com consolidacao de capacidade subutilizada
-- manter configuracao declarativa de `NodePool` e `EC2NodeClass` via Argo CD
+- preferencia por Spot com fallback para On-Demand
+- consolidação de nós subutilizados
+- configuração declarativa via Argo CD
 
-## O que esta provisionado
+## Onde está a configuração
 
-### Terraform (`terraform/modules/addons`)
+- base:
+  - `platform/karpenter/base/ec2-nodeclass.yaml`
+  - `platform/karpenter/base/nodepool-cost-optimized.yaml`
+- overlay compartilhado:
+  - `platform/karpenter/overlays/shared/kustomization.yaml`
+  - `platform/karpenter/overlays/shared/karpenter-settings.env`
 
-- namespace `karpenter`
-- IAM/IRSA do controller Karpenter
-- role de nos: `KarpenterNodeRole-<cluster_name>`
-- fila SQS de interrupcao Spot + eventos EventBridge
-- Helm chart `karpenter-crd`
-- Helm chart `karpenter`
+## Como funciona a parametrização do EC2NodeClass
 
-### GitOps (`platform/karpenter`)
+O `EC2NodeClass` não tem valores hardcoded de cluster no base.
 
-- `EC2NodeClass`:
-  - AMI family `AL2023`
-  - selectors por tag `karpenter.sh/discovery`
-  - role de no Karpenter
-- `NodePool`:
-  - suporta `spot` e `on-demand` (spot-first com fallback)
-  - consolidacao `WhenEmptyOrUnderutilized`
-  - `consolidateAfter: 1m`
-  - `expireAfter: 720h`
+O overlay usa `replacements` do Kustomize para injetar:
 
-## Configuracao obrigatoria antes do apply
+- `CLUSTER_NAME` em:
+  - `spec.subnetSelectorTerms[*].tags["karpenter.sh/discovery"]`
+  - `spec.securityGroupSelectorTerms[*].tags["karpenter.sh/discovery"]`
+- `NODE_ROLE` em:
+  - `spec.role`
 
-Atualize o nome do cluster usado no `EC2NodeClass`:
+Fonte dos parâmetros:
+
+- arquivo `platform/karpenter/overlays/shared/karpenter-settings.env`
+
+## Comando para configurar
 
 ```bash
 make configure-karpenter CLUSTER_NAME=gitops-dev
 ```
 
-Esse valor precisa ser o mesmo `cluster_name` usado no Terraform do ambiente.
+Esse comando atualiza:
 
-## Validacoes recomendadas
+- `CLUSTER_NAME=gitops-dev`
+- `NODE_ROLE=KarpenterNodeRole-gitops-dev`
+
+## Validação
 
 ```bash
 kubectl -n karpenter get pods
 kubectl get ec2nodeclass
 kubectl get nodepool
 kubectl get nodeclaims
-```
-
-Para verificar se a preferencia por Spot esta sendo usada:
-
-```bash
 kubectl get nodes -L karpenter.sh/capacity-type,node.kubernetes.io/instance-type
 ```
-
-## Ajustes de tuning (custo x resiliencia)
-
-- `platform/karpenter/base/nodepool-cost-optimized.yaml`
-  - ajuste `limits.cpu` para limitar crescimento maximo
-  - ajuste `instance-category` para restringir familias
-  - aumente `consolidateAfter` se houver churn excessivo
-- `platform/karpenter/base/ec2-nodeclass.yaml`
-  - fixe AMI por versao em vez de `al2023@latest` quando precisar de maior controle
