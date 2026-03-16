@@ -7,8 +7,14 @@ resources:
   - ../projects/dev-project.yaml
   - ../projects/stage-project.yaml
   - ../projects/prod-project.yaml
+  - ../applications/platform-namespaces-app.yaml
+  - ../applications/platform-ingress-app.yaml
+  - ../applications/platform-external-secrets-app.yaml
   - ../applications/argocd-config-app.yaml
-  - ../applications/platform-app.yaml
+  - ../applications/platform-monitoring-app.yaml
+  - ../applications/platform-argo-rollouts-app.yaml
+  - ../applications/platform-kyverno-policies-app.yaml
+  - ../applications/platform-karpenter-app.yaml
   - ../applications/workloads-dev-app.yaml
   - ../applications/workloads-stage-app.yaml
   - ../applications/workloads-prod-app.yaml

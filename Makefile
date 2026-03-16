@@ -5,8 +5,9 @@ TF_DIR := terraform/environments/$(ENV)
 DOMAIN ?= example.internal
 ECR_IMAGE ?= <aws-account-id>.dkr.ecr.<region>.amazonaws.com/sample-api
 STRATEGY ?= canary
+CLUSTER_NAME ?= gitops-dev
 
-.PHONY: help terraform-init terraform-fmt terraform-validate terraform-plan terraform-apply bootstrap validate-kustomize configure-domain configure-ecr set-prod-strategy lint-sample test-sample build-sample
+.PHONY: help terraform-init terraform-fmt terraform-validate terraform-plan terraform-apply bootstrap validate-kustomize configure-domain configure-ecr configure-karpenter set-prod-strategy lint-sample test-sample build-sample
 
 help:
 	@echo "Targets:" \
@@ -19,6 +20,7 @@ help:
 	&& echo "  validate-kustomize" \
 	&& echo "  configure-domain DOMAIN=platform.example.com" \
 	&& echo "  configure-ecr ECR_IMAGE=123456789012.dkr.ecr.us-east-1.amazonaws.com/sample-api" \
+	&& echo "  configure-karpenter CLUSTER_NAME=gitops-dev" \
 	&& echo "  set-prod-strategy STRATEGY=bluegreen" \
 	&& echo "  lint-sample" \
 	&& echo "  test-sample"
@@ -49,6 +51,9 @@ configure-domain:
 
 configure-ecr:
 	./scripts/configure-ecr.sh $(ECR_IMAGE)
+
+configure-karpenter:
+	./scripts/configure-karpenter.sh $(CLUSTER_NAME)
 
 set-prod-strategy:
 	./scripts/set-rollout-strategy.sh $(STRATEGY)

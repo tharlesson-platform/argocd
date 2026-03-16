@@ -28,6 +28,7 @@ Aplique os placeholders de manifests:
 ```bash
 make configure-domain DOMAIN=platform.example.com
 make configure-ecr ECR_IMAGE=123456789012.dkr.ecr.us-east-1.amazonaws.com/sample-api
+make configure-karpenter CLUSTER_NAME=gitops-dev
 ```
 
 ## 3) Provisione infraestrutura + bootstrap do Argo CD
@@ -42,6 +43,7 @@ Terraform cria:
 - repositórios ECR
 - papéis IAM/IRSA
 - addons base (Argo CD, Argo Rollouts, Prometheus stack, ESO, ALB controller, Kyverno)
+- Karpenter (controller + NodePool/EC2NodeClass via GitOps)
 - `root-app` inicial do Argo CD
 
 ## 4) Confirme handoff para GitOps
@@ -54,7 +56,7 @@ kubectl -n argocd get app root-app -o yaml
 Esperado:
 
 - `root-app` em `Synced` e `Healthy`
-- apps filhas criadas (`argocd-config`, `platform`, workloads por ambiente)
+- apps filhas criadas (`argocd-config`, modulos `platform-*`, workloads por ambiente)
 - `root-app` sendo reconciliada a partir de `argocd/root-app/root-application.yaml` (self-managed)
 
 ## 5) Publique segredos obrigatórios no AWS Secrets Manager
@@ -81,6 +83,7 @@ Esperado:
 kubectl -n external-secrets get pods
 kubectl -n monitoring get pods
 kubectl -n argo-rollouts get pods
+kubectl -n karpenter get pods
+kubectl get ec2nodeclass,nodepool,nodeclaims
 kubectl -n sample-api-dev get rollout sample-api
 ```
-
