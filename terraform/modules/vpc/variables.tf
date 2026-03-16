@@ -29,6 +29,12 @@ variable "single_nat_gateway" {
   default     = true
 }
 
+variable "karpenter_discovery" {
+  description = "Value for karpenter.sh/discovery subnet tag used by EC2NodeClass selectors"
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Common tags"
   type        = map(string)

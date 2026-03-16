@@ -13,4 +13,4 @@ Addons cobertos:
 - External Secrets Operator
 - AWS Load Balancer Controller
 - Kyverno
-
+- Karpenter
