@@ -85,6 +85,21 @@ variable "kyverno_chart_version" {
   default = "3.3.7"
 }
 
+variable "karpenter_chart_version" {
+  type    = string
+  default = "1.9.0"
+}
+
+variable "karpenter_namespace" {
+  type    = string
+  default = "karpenter"
+}
+
+variable "karpenter_service_account" {
+  type    = string
+  default = "karpenter"
+}
+
 variable "tags" {
   type    = map(string)
   default = {}

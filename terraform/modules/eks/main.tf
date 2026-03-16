@@ -28,6 +28,7 @@ module "eks" {
 
   node_security_group_tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = null
+    "karpenter.sh/discovery"                    = var.cluster_name
   }
 
   tags = var.tags

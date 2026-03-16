@@ -6,4 +6,5 @@ resources:
   - ../../external-secrets/overlays/shared
   - ../../monitoring/overlays/shared
   - ../../argo-rollouts/overlays/shared
+  - ../../karpenter/overlays/shared
   - ../../policies/kyverno/overlays/shared

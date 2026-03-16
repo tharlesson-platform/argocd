@@ -1,19 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: platform
+  name: platform-argo-rollouts
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "-10"
+    argocd.argoproj.io/sync-wave: "-9"
 spec:
   project: platform
   source:
     repoURL: https://github.com/your-org/argocd-gitops.git
     targetRevision: main
-    path: platform/overlays/shared
+    path: platform/argo-rollouts/overlays/shared
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: argo-rollouts
   syncPolicy:
     automated:
       prune: true
@@ -25,5 +25,6 @@ spec:
         factor: 2
         maxDuration: 3m
     syncOptions:
+      - CreateNamespace=true
       - ServerSideApply=true
       - ApplyOutOfSyncOnly=true

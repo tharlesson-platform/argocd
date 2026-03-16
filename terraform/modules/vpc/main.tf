@@ -14,9 +14,14 @@ module "vpc" {
   enable_dns_hostnames = true
   enable_dns_support   = true
 
-  private_subnet_tags = {
-    "kubernetes.io/role/internal-elb" = "1"
-  }
+  private_subnet_tags = merge(
+    {
+      "kubernetes.io/role/internal-elb" = "1"
+    },
+    var.karpenter_discovery != null ? {
+      "karpenter.sh/discovery" = var.karpenter_discovery
+    } : {}
+  )
 
   public_subnet_tags = {
     "kubernetes.io/role/elb" = "1"

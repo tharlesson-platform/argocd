@@ -1,0 +1,19 @@
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: default
+  labels:
+    app.kubernetes.io/part-of: gitops-platform
+spec:
+  amiFamily: AL2023
+  role: KarpenterNodeRole-__CLUSTER_NAME__
+  subnetSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: __CLUSTER_NAME__
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: __CLUSTER_NAME__
+  amiSelectorTerms:
+    - alias: al2023@latest
+  tags:
+    app.kubernetes.io/part-of: gitops-platform
