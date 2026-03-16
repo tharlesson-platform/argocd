@@ -20,6 +20,12 @@ resource "kubernetes_namespace" "external_secrets" {
   }
 }
 
+resource "kubernetes_namespace" "karpenter" {
+  metadata {
+    name = var.karpenter_namespace
+  }
+}
+
 resource "aws_iam_role" "external_secrets" {
   name = "${var.cluster_name}-external-secrets-irsa"
 
@@ -110,6 +116,27 @@ resource "aws_iam_policy" "aws_load_balancer_controller" {
 resource "aws_iam_role_policy_attachment" "aws_load_balancer_controller" {
   role       = aws_iam_role.aws_load_balancer_controller.name
   policy_arn = aws_iam_policy.aws_load_balancer_controller.arn
+}
+
+module "karpenter" {
+  source  = "terraform-aws-modules/eks/aws//modules/karpenter"
+  version = "20.29.0"
+
+  cluster_name                 = var.cluster_name
+  enable_v1_permissions        = true
+  enable_irsa                  = true
+  enable_pod_identity          = false
+  irsa_oidc_provider_arn       = var.oidc_provider_arn
+  namespace                    = kubernetes_namespace.karpenter.metadata[0].name
+  service_account              = var.karpenter_service_account
+  irsa_namespace_service_accounts = [
+    "${kubernetes_namespace.karpenter.metadata[0].name}:${var.karpenter_service_account}"
+  ]
+
+  node_iam_role_name            = "KarpenterNodeRole-${var.cluster_name}"
+  node_iam_role_use_name_prefix = false
+
+  tags = var.tags
 }
 
 resource "helm_release" "aws_load_balancer_controller" {
@@ -251,6 +278,52 @@ resource "helm_release" "kyverno" {
   create_namespace = true
 }
 
+resource "helm_release" "karpenter_crd" {
+  name       = "karpenter-crd"
+  repository = "oci://public.ecr.aws/karpenter"
+  chart      = "karpenter-crd"
+  namespace  = kubernetes_namespace.karpenter.metadata[0].name
+  version    = var.karpenter_chart_version
+
+  depends_on = [kubernetes_namespace.karpenter]
+}
+
+resource "helm_release" "karpenter" {
+  name       = "karpenter"
+  repository = "oci://public.ecr.aws/karpenter"
+  chart      = "karpenter"
+  namespace  = kubernetes_namespace.karpenter.metadata[0].name
+  version    = var.karpenter_chart_version
+  skip_crds  = true
+
+  set {
+    name  = "settings.clusterName"
+    value = var.cluster_name
+  }
+
+  set {
+    name  = "settings.interruptionQueue"
+    value = module.karpenter.queue_name
+  }
+
+  set {
+    name  = "serviceAccount.create"
+    value = "true"
+  }
+
+  set {
+    name  = "serviceAccount.name"
+    value = var.karpenter_service_account
+  }
+
+  set {
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = module.karpenter.iam_role_arn
+  }
+
+  depends_on = [module.karpenter, helm_release.karpenter_crd]
+}
+
 resource "helm_release" "argocd" {
   name       = "argocd"
   repository = "https://argoproj.github.io/argo-helm"
@@ -307,5 +380,5 @@ resource "kubernetes_manifest" "argocd_root_app" {
     path     = var.gitops_root_path
   }))
 
-  depends_on = [helm_release.argocd]
+  depends_on = [helm_release.argocd, helm_release.karpenter]
 }
