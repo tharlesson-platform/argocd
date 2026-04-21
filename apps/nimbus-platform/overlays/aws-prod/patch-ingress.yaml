@@ -1,0 +1,7 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nimbus-platform
+spec:
+  rules:
+    - host: nimbus-aws-prod.example.internal

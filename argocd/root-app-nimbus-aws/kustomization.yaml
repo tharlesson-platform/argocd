@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - root-application.yaml
+  - gitops-settings.yaml
+  - ../projects/nimbus-aws-project.yaml
+  - ../applications/nimbus-aws-dev-app.yaml
+  - ../applications/nimbus-aws-stage-app.yaml
+  - ../applications/nimbus-aws-prod-app.yaml
+replacements:
+  - source:
+      kind: ConfigMap
+      name: gitops-settings
+      fieldPath: data.repoURL
+    targets:
+      - select:
+          kind: Application
+        fieldPaths:
+          - spec.source.repoURL
+  - source:
+      kind: ConfigMap
+      name: gitops-settings
+      fieldPath: data.revision
+    targets:
+      - select:
+          kind: Application
+        fieldPaths:
+          - spec.source.targetRevision

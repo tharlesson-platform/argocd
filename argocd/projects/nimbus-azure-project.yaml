@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: nimbus-azure
+  namespace: argocd
+spec:
+  description: Nimbus workloads deployed by Argo CD on Azure.
+  sourceRepos:
+    - "*"
+  destinations:
+    - namespace: nimbus-azure-dev
+      server: https://kubernetes.default.svc
+    - namespace: nimbus-azure-stage
+      server: https://kubernetes.default.svc
+    - namespace: nimbus-azure-prod
+      server: https://kubernetes.default.svc
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"

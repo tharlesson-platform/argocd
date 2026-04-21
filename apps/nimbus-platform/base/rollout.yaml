@@ -1,0 +1,77 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: nimbus-platform
+spec:
+  replicas: 2
+  revisionHistoryLimit: 10
+  rollbackWindow:
+    revisions: 3
+  selector:
+    matchLabels:
+      app: nimbus-platform
+  template:
+    metadata:
+      labels:
+        app: nimbus-platform
+    spec:
+      serviceAccountName: nimbus-platform
+      containers:
+        - name: nimbus-platform
+          image: nimbus-cloud-backend:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 4000
+          envFrom:
+            - configMapRef:
+                name: nimbus-platform-config
+            - secretRef:
+                name: nimbus-platform-runtime
+          volumeMounts:
+            - name: report-output
+              mountPath: /var/run/nimbus/reports
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+      volumes:
+        - name: report-output
+          emptyDir: {}
+  strategy:
+    canary:
+      canaryService: nimbus-platform-canary
+      stableService: nimbus-platform-stable
+      trafficRouting:
+        nginx:
+          stableIngress: nimbus-platform
+      maxSurge: 25%
+      maxUnavailable: 0
+      abortScaleDownDelaySeconds: 30
+      steps:
+        - setWeight: 20
+        - pause:
+            duration: 60s
+        - setWeight: 50
+        - pause:
+            duration: 120s
+        - setWeight: 100
