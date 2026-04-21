@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nimbus-azure-prod
+  namespace: argocd
+spec:
+  project: nimbus-azure
+  source:
+    repoURL: https://github.com/your-org/argocd-gitops.git
+    targetRevision: main
+    path: apps/nimbus-platform/overlays/azure-prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nimbus-azure-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true

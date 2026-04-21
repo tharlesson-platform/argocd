@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nimbus-aws-stage
+  namespace: argocd
+spec:
+  project: nimbus-aws
+  source:
+    repoURL: https://github.com/your-org/argocd-gitops.git
+    targetRevision: main
+    path: apps/nimbus-platform/overlays/aws-stage
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nimbus-aws-stage
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true

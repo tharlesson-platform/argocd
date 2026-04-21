@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nimbus-platform-config
+data:
+  NODE_ENV: "production"
+  NIMBUS_HOST: "0.0.0.0"
+  NIMBUS_PORT: "4000"
+  NIMBUS_DEMO_MODE: "false"
+  NIMBUS_BOOTSTRAP_USERS: "false"
+  NIMBUS_STORAGE_MODE: "postgres"
+  NIMBUS_QUEUE_MODE: "memory"
+  NIMBUS_REPORT_OUTPUT_DIR: "/var/run/nimbus/reports"
+  NIMBUS_FRONTEND_ROOT: "/workspace/nimbus-cloud-frontend/public"
+  NIMBUS_DEFAULT_REGION: "us-east-1"
+  NIMBUS_TIMEZONE: "America/Sao_Paulo"
+  NIMBUS_MFA_ISSUER: "Nimbus Cloud"
