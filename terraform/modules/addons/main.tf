@@ -146,35 +146,32 @@ resource "helm_release" "aws_load_balancer_controller" {
   namespace  = "kube-system"
   version    = var.aws_load_balancer_controller_chart_version
 
-  set {
-    name  = "clusterName"
-    value = var.cluster_name
-  }
-
-  set {
-    name  = "region"
-    value = var.region
-  }
-
-  set {
-    name  = "vpcId"
-    value = var.vpc_id
-  }
-
-  set {
-    name  = "serviceAccount.create"
-    value = "true"
-  }
-
-  set {
-    name  = "serviceAccount.name"
-    value = "aws-load-balancer-controller"
-  }
-
-  set {
-    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = aws_iam_role.aws_load_balancer_controller.arn
-  }
+  set = [
+    {
+      name  = "clusterName"
+      value = var.cluster_name
+    },
+    {
+      name  = "region"
+      value = var.region
+    },
+    {
+      name  = "vpcId"
+      value = var.vpc_id
+    },
+    {
+      name  = "serviceAccount.create"
+      value = "true"
+    },
+    {
+      name  = "serviceAccount.name"
+      value = "aws-load-balancer-controller"
+    },
+    {
+      name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+      value = aws_iam_role.aws_load_balancer_controller.arn
+    },
+  ]
 
   depends_on = [aws_iam_role_policy_attachment.aws_load_balancer_controller]
 }
@@ -186,25 +183,24 @@ resource "helm_release" "external_secrets" {
   namespace  = kubernetes_namespace.external_secrets.metadata[0].name
   version    = var.external_secrets_chart_version
 
-  set {
-    name  = "installCRDs"
-    value = "true"
-  }
-
-  set {
-    name  = "serviceAccount.create"
-    value = "true"
-  }
-
-  set {
-    name  = "serviceAccount.name"
-    value = "external-secrets"
-  }
-
-  set {
-    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = aws_iam_role.external_secrets.arn
-  }
+  set = [
+    {
+      name  = "installCRDs"
+      value = "true"
+    },
+    {
+      name  = "serviceAccount.create"
+      value = "true"
+    },
+    {
+      name  = "serviceAccount.name"
+      value = "external-secrets"
+    },
+    {
+      name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+      value = aws_iam_role.external_secrets.arn
+    },
+  ]
 
   depends_on = [aws_iam_role_policy_attachment.external_secrets]
 }
@@ -296,30 +292,28 @@ resource "helm_release" "karpenter" {
   version    = var.karpenter_chart_version
   skip_crds  = true
 
-  set {
-    name  = "settings.clusterName"
-    value = var.cluster_name
-  }
-
-  set {
-    name  = "settings.interruptionQueue"
-    value = module.karpenter.queue_name
-  }
-
-  set {
-    name  = "serviceAccount.create"
-    value = "true"
-  }
-
-  set {
-    name  = "serviceAccount.name"
-    value = var.karpenter_service_account
-  }
-
-  set {
-    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = module.karpenter.iam_role_arn
-  }
+  set = [
+    {
+      name  = "settings.clusterName"
+      value = var.cluster_name
+    },
+    {
+      name  = "settings.interruptionQueue"
+      value = module.karpenter.queue_name
+    },
+    {
+      name  = "serviceAccount.create"
+      value = "true"
+    },
+    {
+      name  = "serviceAccount.name"
+      value = var.karpenter_service_account
+    },
+    {
+      name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+      value = module.karpenter.iam_role_arn
+    },
+  ]
 
   depends_on = [module.karpenter, helm_release.karpenter_crd]
 }
