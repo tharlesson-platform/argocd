@@ -65,7 +65,7 @@ jobs:
           github-actions/scripts/update_tag.sh "${{ inputs.target_env }}" "${{ steps.resolve-tag.outputs.tag }}"
 
       - name: Create promotion PR
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: promotion/${{ inputs.source_env }}-to-${{ inputs.target_env }}-${{ github.run_number }}
           title: "Promote sample-api: ${{ inputs.source_env }} -> ${{ inputs.target_env }} (${{ steps.resolve-tag.outputs.tag }})"
