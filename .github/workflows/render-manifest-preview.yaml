@@ -27,7 +27,7 @@ jobs:
           kustomize build environments/${{ matrix.env }} > rendered/${{ matrix.env }}.yaml
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rendered-${{ matrix.env }}
           path: rendered/${{ matrix.env }}.yaml
