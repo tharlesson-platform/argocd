@@ -9,11 +9,11 @@ locals {
 module "vpc" {
   source = "../../modules/vpc"
 
-  name            = "${var.cluster_name}-vpc"
-  cidr            = var.vpc_cidr
-  azs             = var.azs
-  private_subnets = var.private_subnets
-  public_subnets  = var.public_subnets
+  name                = "${var.cluster_name}-vpc"
+  cidr                = var.vpc_cidr
+  azs                 = var.azs
+  private_subnets     = var.private_subnets
+  public_subnets      = var.public_subnets
   karpenter_discovery = var.cluster_name
 
   tags = local.common_tags
