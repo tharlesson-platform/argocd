@@ -173,6 +173,7 @@ Detalhes: [`docs/promotion-flow.md`](docs/promotion-flow.md)
 - `make test-sample`
 - `./scripts/set-rollout-strategy.sh bluegreen`
 - `./scripts/set-rollout-strategy.sh canary`
+- `./scripts/collect-upgrade-readiness-bundle.sh /tmp/argocd-upgrade-bundle`
 
 ## Mapa da documentação
 
@@ -181,6 +182,7 @@ Detalhes: [`docs/promotion-flow.md`](docs/promotion-flow.md)
 - Promoção: [`docs/promotion-flow.md`](docs/promotion-flow.md)
 - Deploy modular: [`docs/platform-modules.md`](docs/platform-modules.md)
 - Entrega progressiva: [`docs/progressive-delivery.md`](docs/progressive-delivery.md)
+- Upgrade readiness: [`docs/upgrade-readiness.md`](docs/upgrade-readiness.md)
 - Guia operacional: [`docs/operations-runbook.md`](docs/operations-runbook.md)
 - Rollback: [`docs/rollback.md`](docs/rollback.md)
 - Segredos: [`docs/secrets.md`](docs/secrets.md)
