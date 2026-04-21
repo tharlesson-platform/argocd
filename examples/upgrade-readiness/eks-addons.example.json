@@ -1,0 +1,14 @@
+[
+  {
+    "name": "vpc-cni",
+    "status": "supported"
+  },
+  {
+    "name": "coredns",
+    "status": "supported"
+  },
+  {
+    "name": "aws-ebs-csi-driver",
+    "status": "upgrade-required"
+  }
+]
