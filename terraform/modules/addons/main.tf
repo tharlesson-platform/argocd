@@ -120,18 +120,11 @@ resource "aws_iam_role_policy_attachment" "aws_load_balancer_controller" {
 
 module "karpenter" {
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "20.29.0"
+  version = "21.18.0"
 
-  cluster_name           = var.cluster_name
-  enable_v1_permissions  = true
-  enable_irsa            = true
-  enable_pod_identity    = false
-  irsa_oidc_provider_arn = var.oidc_provider_arn
-  namespace              = kubernetes_namespace.karpenter.metadata[0].name
-  service_account        = var.karpenter_service_account
-  irsa_namespace_service_accounts = [
-    "${kubernetes_namespace.karpenter.metadata[0].name}:${var.karpenter_service_account}"
-  ]
+  cluster_name    = var.cluster_name
+  namespace       = kubernetes_namespace.karpenter.metadata[0].name
+  service_account = var.karpenter_service_account
 
   node_iam_role_name            = "KarpenterNodeRole-${var.cluster_name}"
   node_iam_role_use_name_prefix = false
@@ -308,10 +301,6 @@ resource "helm_release" "karpenter" {
     {
       name  = "serviceAccount.name"
       value = var.karpenter_service_account
-    },
-    {
-      name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-      value = module.karpenter.iam_role_arn
     },
   ]
 
