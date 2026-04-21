@@ -122,13 +122,13 @@ module "karpenter" {
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
   version = "20.29.0"
 
-  cluster_name                 = var.cluster_name
-  enable_v1_permissions        = true
-  enable_irsa                  = true
-  enable_pod_identity          = false
-  irsa_oidc_provider_arn       = var.oidc_provider_arn
-  namespace                    = kubernetes_namespace.karpenter.metadata[0].name
-  service_account              = var.karpenter_service_account
+  cluster_name           = var.cluster_name
+  enable_v1_permissions  = true
+  enable_irsa            = true
+  enable_pod_identity    = false
+  irsa_oidc_provider_arn = var.oidc_provider_arn
+  namespace              = kubernetes_namespace.karpenter.metadata[0].name
+  service_account        = var.karpenter_service_account
   irsa_namespace_service_accounts = [
     "${kubernetes_namespace.karpenter.metadata[0].name}:${var.karpenter_service_account}"
   ]
