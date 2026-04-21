@@ -120,7 +120,7 @@ resource "aws_iam_role_policy_attachment" "aws_load_balancer_controller" {
 
 module "karpenter" {
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "20.29.0"
+  version = "21.18.0"
 
   cluster_name           = var.cluster_name
   enable_v1_permissions  = true
