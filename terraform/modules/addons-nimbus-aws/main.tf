@@ -81,8 +81,8 @@ resource "aws_iam_policy" "external_secrets" {
         Resource = "*"
       },
       {
-        Effect = "Allow"
-        Action = ["kms:Decrypt"]
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt"]
         Resource = "*"
       }
     ]
