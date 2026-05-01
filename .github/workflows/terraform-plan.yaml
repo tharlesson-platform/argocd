@@ -28,7 +28,7 @@ jobs:
         working-directory: terraform/environments/${{ matrix.env }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
