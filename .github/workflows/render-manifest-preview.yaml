@@ -6,20 +6,64 @@ on:
 permissions:
   contents: read
 
+env:
+  SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  TF_INPUT: "false"
+  TF_IN_AUTOMATION: "true"
+  AWS_EC2_METADATA_DISABLED: "true"
+  AWS_SHARED_CREDENTIALS_FILE: /dev/null
+  AWS_CONFIG_FILE: /dev/null
+
 jobs:
   render:
-    runs-on: ubuntu-latest
+    runs-on: ["argocd-run-${{ github.run_id }}"]
+    timeout-minutes: 20
     strategy:
       matrix:
         env: [dev, stage, prod]
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Kustomize
-        uses: imranismail/setup-kustomize@v3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          kustomize-version: 5.4.3
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+
+      - name: Verify exact source and isolated guest
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -f /opt/isolation-base-ready
+          test ! -L /opt/isolation-base-ready
+          test "$(uname -s)" = Linux
+          test "$(uname -m)" = aarch64
+          test -z "${SSH_AUTH_SOCK:-}"
+          test -z "${LOCAL_ARTIFACT_TOKEN:-}"
+          test -z "${LOCAL_ARTIFACT_URL:-}"
+          for credential in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_WEB_IDENTITY_TOKEN_FILE AWS_CONTAINER_CREDENTIALS_FULL_URI AWS_CONTAINER_CREDENTIALS_RELATIVE_URI; do
+            test -z "${!credential:-}"
+          done
+          mount_inventory=$(findmnt --raw --noheadings --output FSTYPE)
+          test -n "$mount_inventory"
+          while IFS= read -r filesystem; do
+            case "$filesystem" in
+              9p|virtiofs|nfs|nfs4|cifs|smbfs|fuse.sshfs|""|*[!A-Za-z0-9_.-]*) exit 1 ;;
+            esac
+          done <<< "$mount_inventory"
+
+      - name: Install verified kustomize for Linux ARM64
+        shell: bash
+        run: |
+          set -euo pipefail
+          tool_directory=$(mktemp -d "$RUNNER_TEMP/argocd-kustomize.XXXXXXXX")
+          curl --fail --location --proto '=https' --tlsv1.2 --retry 2 --max-time 180 \
+            --output "$tool_directory/tool.tar.gz" https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_arm64.tar.gz
+          printf '%s  %s\n' '1b515578b0af12c15d9856720066ce2fe66756d63785b2cbccaf2885beb2381c' "$tool_directory/tool.tar.gz" | sha256sum --check --strict
+          tar -xzf "$tool_directory/tool.tar.gz" -C "$tool_directory" kustomize
+          chmod 0755 "$tool_directory/kustomize"
+          test "$("$tool_directory/kustomize" version)" = v5.4.3
+          printf '%s\n' "$tool_directory" >> "$GITHUB_PATH"
 
       - name: Render manifests
         run: |
@@ -27,7 +71,7 @@ jobs:
           kustomize build environments/${{ matrix.env }} > rendered/${{ matrix.env }}.yaml
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: rendered-${{ matrix.env }}
           path: rendered/${{ matrix.env }}.yaml
