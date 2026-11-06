@@ -219,3 +219,49 @@ Ao reutilizar ou derivar este material:
 
 **Tharlesson**  
 GitHub: https://github.com/tharlesson
+
+
+## CI local isolado — candidato de fonte (2026-11-05)
+
+A migração se limita a `.github/workflows/ci.yaml`, `guardrails.yml` e
+`render-manifest-preview.yaml`. Todos os jobs usam a label exclusiva
+`argocd-run-${{ github.run_id }}`; a admissão por job/run/SHA é responsabilidade
+do controlador revisado, fora deste patch. O CI passa a aceitar push em `master`
+além de `main`, porque a principal real é `master`. Os gatilhos PR, guardrails
+em main/master, render somente PR e permissões `contents: read` são preservados.
+Não há admissão automática da branch candidata nem criação de PR nesta preparação.
+
+Checkout usa SHA completo da action e o head exato do PR ou SHA do push, com
+credenciais não persistidas. Antes dos testes, cada job exige marker da VM,
+Linux ARM64, ausência de mounts compartilhados/SSH agent/credenciais AWS e das
+variáveis do gateway local de artifacts. Não se configura acesso cloud/OIDC.
+Terraform usa arquivos de configuração/credenciais AWS nulos e metadata desativada.
+
+Terraform 1.10.5, Kustomize 5.4.3 e kubeconform 0.6.7 são baixados dos projetos
+oficiais para Linux ARM64, com SHA256 fixos conferidos antes da extração; as
+ferramentas ficam somente no RUNNER_TEMP do job. Actions utilizadas nestes três
+workflows ficam pinadas por commit completo. São preservados Ruff 0.11.0,
+requirements/pytest, fmt recursivo e as matrizes dev/stage/prod com init
+`-backend=false`/validate e render/validação de schema. Kubeconform mantém
+`-strict -summary -ignore-missing-schemas`: schemas ausentes continuam sendo
+ignorados conforme a baseline, não são declarados validados.
+
+O upload de previews continua sendo **GitHub Actions artifacts**, com os mesmos
+nomes e paths. Não existe capability de escrita no gateway/host artifact local.
+Quotas/falhas do upload permanecem visíveis, sem mudar billing, apagar artifacts
+ou desabilitar o gate. Build/update-dev, promote, terraform-plan e smoke são
+byte-idênticos e não são admitidos por esta migração; não foram executados.
+Não há alteração em manifests, Terraform, imagem da app, promoção ou deploy.
+
+Provas locais em `.ops/evidence/argocd-isolated-ci-20261105`: ferramentas oficiais
+Darwin ARM64 de mesmas versões, Ruff e 2 testes da app, fmt e init/validate dos
+três ambientes em cópia descartável sem credenciais cloud, e render/schema dos
+três ambientes. Por ambiente: 13 recursos, 9 válidos, 0 inválidos/erros e 4 schemas
+ignorados pelo flag original. Archives Linux ARM64 também tiveram SHA256
+conferido, sem executar esses binaries no Mac. Actions/job em VM Linux e upload
+remoto ainda precisam da CI real após revisão e publicação autorizadas.
+
+Fonte preparada sem commit/push, API write, Docker/VM, plan/apply, credenciais
+cloud ou mudança de Root/runners. Antes do PR, requer revisão independente;
+rollback desta fase é não publicar/admitir a fonte. Este parecer local não
+certifica produção nem o estado de qualquer ambiente AWS/Kubernetes.
