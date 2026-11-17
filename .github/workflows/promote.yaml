@@ -28,44 +28,47 @@ permissions:
 
 jobs:
   promote:
-    runs-on: ubuntu-latest
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ["argocd-run-${{ github.run_id }}"]
+    timeout-minutes: 15
     environment: ${{ inputs.target_env == 'prod' && 'production' || 'staging' }}
+    env:
+      SOURCE_ENV: ${{ inputs.source_env }}
+      TARGET_ENV: ${{ inputs.target_env }}
     steps:
       - name: Validate env transition
         run: |
-          if [[ "${{ inputs.source_env }}" == "dev" && "${{ inputs.target_env }}" != "stage" ]]; then
-            echo "Only dev -> stage is allowed"
-            exit 1
-          fi
-          if [[ "${{ inputs.source_env }}" == "stage" && "${{ inputs.target_env }}" != "prod" ]]; then
-            echo "Only stage -> prod is allowed"
-            exit 1
-          fi
+          case "$SOURCE_ENV:$TARGET_ENV" in
+            dev:stage|stage:prod) ;;
+            *) echo 'Expected dev -> stage or stage -> prod' >&2; exit 1 ;;
+          esac
 
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Resolve image tag
         id: resolve-tag
+        env:
+          INPUT_TAG: ${{ inputs.image_tag }}
         run: |
-          if [[ -n "${{ inputs.image_tag }}" ]]; then
-            TAG="${{ inputs.image_tag }}"
-          else
-            TAG=$(awk '/newTag:/ {print $2}' apps/sample-api/overlays/${{ inputs.source_env }}/kustomization.yaml | tr -d '"')
+          tag=$INPUT_TAG
+          if [[ -z "$tag" ]]; then
+            tag=$(awk '/newTag:/ {print $2}' "apps/sample-api/overlays/$SOURCE_ENV/kustomization.yaml" | tr -d '"')
           fi
-          if [[ -z "$TAG" ]]; then
-            echo "Could not resolve image tag"
+          if [[ ! "$tag" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]]; then
+            echo 'Invalid image tag' >&2
             exit 1
           fi
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          printf 'tag=%s\n' "$tag" >> "$GITHUB_OUTPUT"
 
       - name: Update target overlay
+        env:
+          IMAGE_TAG: ${{ steps.resolve-tag.outputs.tag }}
         run: |
-          chmod +x github-actions/scripts/update_tag.sh
-          github-actions/scripts/update_tag.sh "${{ inputs.target_env }}" "${{ steps.resolve-tag.outputs.tag }}"
+          bash github-actions/scripts/update_tag.sh "$TARGET_ENV" "$IMAGE_TAG"
 
       - name: Create promotion PR
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8
         with:
           branch: promotion/${{ inputs.source_env }}-to-${{ inputs.target_env }}-${{ github.run_number }}
           title: "Promote sample-api: ${{ inputs.source_env }} -> ${{ inputs.target_env }} (${{ steps.resolve-tag.outputs.tag }})"
