@@ -13,10 +13,15 @@ on:
 permissions:
   id-token: write
   contents: write
+  pull-requests: write
+
+concurrency:
+  group: dev-overlay-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build-push-update:
-    if: github.event_name == 'push' || github.ref_name == github.event.repository.default_branch
+    if: github.event_name == 'push' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ["argocd-run-${{ github.run_id }}"]
     timeout-minutes: 30
     env:
@@ -68,14 +73,12 @@ jobs:
           bash github-actions/scripts/update_tag.sh "$OVERLAY_ENV" "$IMAGE_TAG"
           sed -i "s#<aws-account-id>.dkr.ecr.<region>.amazonaws.com/sample-api#$IMAGE_NAME#g" "apps/sample-api/overlays/$OVERLAY_ENV/kustomization.yaml"
 
-      - name: Commit GitOps change
-        env:
-          IMAGE_TAG: ${{ steps.build-image.outputs.image_tag }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add apps/sample-api/overlays/dev/kustomization.yaml
-          if ! git diff --cached --quiet; then
-            git commit -m "chore(gitops): update dev image to $IMAGE_TAG"
-            git push
-          fi
+      - name: Create dev overlay PR
+        uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8
+        with:
+          base: ${{ github.ref_name }}
+          branch: automation/dev-image-${{ github.ref_name }}
+          delete-branch: true
+          title: "chore(gitops): update dev image to ${{ steps.build-image.outputs.image_tag }}"
+          commit-message: "chore(gitops): update dev image to ${{ steps.build-image.outputs.image_tag }}"
+          add-paths: apps/sample-api/overlays/dev/kustomization.yaml

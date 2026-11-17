@@ -24,8 +24,11 @@ O smoke precisa de um `base_url` alcançável a partir da VM. Ele consulta
 2. Workflow `Build Image and Update Dev Overlay`:
    - autenticação OIDC da role `AWS_GHA_ROLE_ARN`, build da imagem e push para ECR
    - update de `apps/sample-api/overlays/dev/kustomization.yaml` com nova tag
-   - commit da atualização no Git
-3. Argo CD faz auto-sync de `workloads-dev`.
+   - PR com a atualização do overlay dev na branch do disparo
+3. Revise e mescle a PR. Argo CD faz auto-sync de `workloads-dev` após o merge.
+
+Antes de publicar, confirme que a role OIDC e o registry dev foram configurados
+e que a identidade do workflow pode abrir PRs conforme a política do repositório.
 
 ## Promoção para stage
 
