@@ -6,14 +6,29 @@
 - Promoção é uma mudança em Git no overlay do ambiente de destino.
 - Argo CD reconcilia mudanças do Git após merge.
 
+## Runner local
+
+Provisione uma VM descartável por job com o label `argocd-run-<run_id>`.
+Confira repositório, workflow, branch, SHA e job na fila antes de registrar
+o runner. A conta do job fica sem privilégios administrativos e sem acesso ao
+socket Docker do host. O build da imagem usa Podman rootless e preserva
+`linux/amd64`. No Mac ARM, a VM de build usa Rosetta para executar essa arquitetura.
+
+O smoke precisa de um `base_url` alcançável a partir da VM. Ele consulta
+`/health` e `/ready` e exige HTTP 2xx para cada endpoint.
+
 ## Release em dev
 
-1. Faça merge do código da aplicação em `main`.
+1. Despache o workflow na branch padrão. O push em `main` também é um gatilho
+   para os caminhos configurados nesse workflow.
 2. Workflow `Build Image and Update Dev Overlay`:
-   - build da imagem e push para ECR
+   - autenticação OIDC da role `AWS_GHA_ROLE_ARN`, build da imagem e push para ECR
    - update de `apps/sample-api/overlays/dev/kustomization.yaml` com nova tag
-   - commit da atualização no Git
-3. Argo CD faz auto-sync de `workloads-dev`.
+   - PR com a atualização do overlay dev na branch do disparo
+3. Revise e mescle a PR. Argo CD faz auto-sync de `workloads-dev` após o merge.
+
+Antes de publicar, confirme que a role OIDC e o registry dev foram configurados
+e que a identidade do workflow pode abrir PRs conforme a política do repositório.
 
 ## Promoção para stage
 
@@ -22,7 +37,8 @@ Execute o workflow `Promote Image Between Environments` com:
 - `source_env=dev`
 - `target_env=stage`
 
-O workflow abre PR com bump de tag em stage.
+O workflow abre PR com bump de tag em stage quando a política do repositório
+permite que o token do workflow crie PRs.
 Após merge, Argo CD faz auto-sync em stage.
 
 ## Promoção para prod

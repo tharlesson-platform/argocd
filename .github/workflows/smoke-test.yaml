@@ -21,26 +21,29 @@ permissions:
 
 jobs:
   smoke:
-    runs-on: ubuntu-latest
+    runs-on: ["argocd-run-${{ github.run_id }}"]
+    timeout-minutes: 10
     steps:
-      - name: Resolve URL
-        id: resolve
+      - name: Check health and readiness
+        env:
+          TARGET_ENV: ${{ inputs.environment }}
+          BASE_URL: ${{ inputs.base_url }}
         run: |
-          if [[ -n "${{ inputs.base_url }}" ]]; then
-            URL="${{ inputs.base_url }}"
-          else
-            case "${{ inputs.environment }}" in
-              dev) URL="https://sample-api-dev.example.internal" ;;
-              stage) URL="https://sample-api-stage.example.internal" ;;
-              prod) URL="https://sample-api.example.internal" ;;
-            esac
+          case "$TARGET_ENV" in
+            dev) default_url=https://sample-api-dev.example.internal ;;
+            stage) default_url=https://sample-api-stage.example.internal ;;
+            prod) default_url=https://sample-api.example.internal ;;
+            *) echo 'Invalid environment' >&2; exit 1 ;;
+          esac
+          url=${BASE_URL:-$default_url}
+          if [[ ! "$url" =~ ^https?://[^[:space:]@/?#]+(/[^[:space:]?#]*)?$ ]]; then
+            echo 'Expected an HTTP(S) base URL without credentials, query or fragment' >&2
+            exit 1
           fi
-          echo "url=$URL" >> "$GITHUB_OUTPUT"
-
-      - name: Health endpoint
-        run: |
-          curl -fSs "${{ steps.resolve.outputs.url }}/health"
-
-      - name: Readiness endpoint
-        run: |
-          curl -fSs "${{ steps.resolve.outputs.url }}/ready"
+          for endpoint in health ready; do
+            status=$(curl --fail --silent --show-error --proto '=http,https' --globoff \
+              --connect-timeout 5 --max-time 20 --output /dev/null \
+              --write-out '%{http_code}' -- "${url%/}/$endpoint")
+            printf '%s: %s\n' "$endpoint" "$status"
+            [[ "$status" == 2[0-9][0-9] ]]
+          done
