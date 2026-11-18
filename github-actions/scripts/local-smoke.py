@@ -12,6 +12,11 @@ import urllib.request
 from urllib.parse import urlsplit
 
 
+class RejectRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, request, fp, code, message, headers, new_url):
+        raise ValueError("Redirecionamento HTTP proibido no smoke local")
+
+
 def probe(url, version):
     parsed = urlsplit(url)
     if (
@@ -24,7 +29,9 @@ def probe(url, version):
         or parsed.username
     ):
         raise ValueError("Somente HTTP em 127.0.0.1 com porta explícita")
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    opener = urllib.request.build_opener(
+        urllib.request.ProxyHandler({}), RejectRedirect()
+    )
     for endpoint, expected in (
         ("health", {"status": "ok", "version": version}),
         ("ready", {"ready": True}),

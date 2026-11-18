@@ -63,6 +63,7 @@ assert any(r.get("Type") == "wolfi" and r.get("Packages") for r in results)
 assert any(r.get("Type") == "python-pkg" and r.get("Packages") for r in results)
 assert not any(r.get("Vulnerabilities") for r in results)
 print("Inventários OS/Python presentes; zero vulnerabilidades conhecidas, sem ignores.")
+print("TRIVY_JSON=" + json.dumps(report, separators=(",", ":")))
 SCAN
 podman run -d --name "$api" --pull=never --read-only --cap-drop=ALL \
   --security-opt=no-new-privileges --tmpfs /tmp:rw,noexec,nosuid,size=16m \
@@ -76,4 +77,4 @@ done
 python3 github-actions/scripts/local-smoke.py --url "http://$api_address" --version "$sha"
 test "$(podman exec "$api" id -u)" = 10001
 sha256sum "$work/image.oci.tar" "$work/trivy.json"
-printf 'RECIBO_LOCAL sha=%s digest=%s arquitetura=arm64 registry=%s scanner=0 deploy=false retencao=VM-descartavel\n' "$sha" "$digest" "$address"
+printf 'RECIBO_LOCAL run=%s attempt=%s sha=%s digest=%s arquitetura=arm64 registry=%s scanner=0 deploy=false retencao=VM-descartavel\n' "${GITHUB_RUN_ID:?}" "${GITHUB_RUN_ATTEMPT:?}" "$sha" "$digest" "$address"
