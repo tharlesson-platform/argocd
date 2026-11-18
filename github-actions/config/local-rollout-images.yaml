@@ -1,0 +1,6 @@
+# Configuração usada SOMENTE na cópia temporária de validação.
+images:
+  - path: spec/template/spec/containers/image
+    group: argoproj.io
+    version: v1alpha1
+    kind: Rollout

@@ -23,6 +23,15 @@ test -n "$source_name" && test "$source_name" = "$target_name"
 (cd "$work"; bash "$root/github-actions/scripts/update_tag.sh" "$target_env" "$source_tag")
 test "$source_tag" = "$(awk '/^[[:space:]]*newTag:/ {gsub(/"/, "", $2); print $2}' "$target_file")"
 grep -F "newTag: \"$tag\"" "$work/apps/sample-api/overlays/$target_env/kustomization.yaml"
+# Kustomize não conhece o campo image do CRD Rollout por padrão.
+# A configuração explícita fica apenas na cópia, sem mudar GitOps em produção.
+for environment in "$source_env" "$target_env"; do
+  directory="$work/apps/sample-api/overlays/$environment"
+  cp "$root/github-actions/config/local-rollout-images.yaml" "$directory/local-rollout-images.yaml"
+  printf '\nconfigurations:\n  - local-rollout-images.yaml\n' >> "$directory/kustomization.yaml"
+done
+kustomize build "$work/apps/sample-api/overlays/$source_env" > "$work/source.yaml"
+grep -F "$source_name:$source_tag" "$work/source.yaml"
 kustomize build "$work/apps/sample-api/overlays/$target_env" > "$work/rendered.yaml"
 kubeconform -strict -summary -ignore-missing-schemas "$work/rendered.yaml"
 grep -F ":$tag" "$work/rendered.yaml"

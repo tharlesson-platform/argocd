@@ -26,5 +26,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Controles de integridade OCI
+        run: python3 -m unittest discover -s github-actions/tests -v
       - name: Build, push/pull local, SCA e smoke da imagem
         run: bash github-actions/scripts/build-local-image.sh

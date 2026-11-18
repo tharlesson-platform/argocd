@@ -22,6 +22,10 @@ Os pacotes APK são atualizados no build; transitivas Python são resolvidas e
 auditadas no conteúdo real da imagem. Isso não substitui monitoramento
 contínuo após a execução nem garante ausência de vulnerabilidades inéditas.
 
+O formato OCI do Podman não conserva a extensão Docker HEALTHCHECK. O gate
+configura o healthcheck no container e exige sua execução bem-sucedida, além
+dos probes HTTP e da verificação de UID 10001.
+
 O smoke inicia a API real em loopback e valida `/`, `/health`, `/ready` e
 `/metrics`, incluindo a versão correspondente ao SHA do código. O fluxo de
 promoção **apenas simula** `dev -> stage` e `stage -> prod`: utiliza o mesmo
@@ -37,6 +41,10 @@ de publicação ECR e promoção real foi substituída pela validação local; u
 promoção real futura exige implementação e autorização próprias.
 
 ## Operação
+
+A validação injeta somente na cópia temporária a configuração de imagem do
+CRD Rollout, que o Kustomize não conhece por padrão. Os manifests GitOps
+versionados não são modificados; o resultado é uma simulação local.
 
 O controlador deve verificar repositório, workflow, evento, run/attempt,
 SHA/blob e base da PR antes de registrar o runner com rótulo exclusivo
