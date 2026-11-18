@@ -1,20 +1,11 @@
 name: Smoke Test
 
 on:
+  pull_request:
+  push:
+    branches: [main, master]
+    paths: ["apps/sample-api/app/**", "github-actions/scripts/**", ".github/workflows/smoke-test.yaml"]
   workflow_dispatch:
-    inputs:
-      environment:
-        description: Environment to test
-        required: true
-        type: choice
-        options:
-          - dev
-          - stage
-          - prod
-      base_url:
-        description: Optional explicit URL (e.g. https://sample-api-dev.example.internal)
-        required: false
-        type: string
 
 permissions:
   contents: read
@@ -22,28 +13,20 @@ permissions:
 jobs:
   smoke:
     runs-on: ["argocd-run-${{ github.run_id }}"]
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
-      - name: Check health and readiness
+      - name: Checkout da origem exata
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Instalar dependências
+        run: python -m pip install -r apps/sample-api/app/requirements.txt
+      - name: Smoke real da API somente no loopback
         env:
-          TARGET_ENV: ${{ inputs.environment }}
-          BASE_URL: ${{ inputs.base_url }}
-        run: |
-          case "$TARGET_ENV" in
-            dev) default_url=https://sample-api-dev.example.internal ;;
-            stage) default_url=https://sample-api-stage.example.internal ;;
-            prod) default_url=https://sample-api.example.internal ;;
-            *) echo 'Invalid environment' >&2; exit 1 ;;
-          esac
-          url=${BASE_URL:-$default_url}
-          if [[ ! "$url" =~ ^https?://[^[:space:]@/?#]+(/[^[:space:]?#]*)?$ ]]; then
-            echo 'Expected an HTTP(S) base URL without credentials, query or fragment' >&2
-            exit 1
-          fi
-          for endpoint in health ready; do
-            status=$(curl --fail --silent --show-error --proto '=http,https' --globoff \
-              --connect-timeout 5 --max-time 20 --output /dev/null \
-              --write-out '%{http_code}' -- "${url%/}/$endpoint")
-            printf '%s: %s\n' "$endpoint" "$status"
-            [[ "$status" == 2[0-9][0-9] ]]
-          done
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python github-actions/scripts/local-smoke.py --version "$SOURCE_SHA"
