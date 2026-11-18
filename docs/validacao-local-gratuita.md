@@ -43,7 +43,11 @@ promoção real futura exige implementação e autorização próprias.
 ## Operação
 
 A validação injeta somente na cópia temporária a configuração de imagem do
-CRD Rollout, que o Kustomize não conhece por padrão. Os manifests GitOps
+CRD Rollout, que o Kustomize não conhece por padrão, e uma definição OpenAPI
+local para mesclar containers por nome. Sem essa definição, os patches
+estratégicos substituem a lista de containers e removem campos como image.
+A correção do motor de renderização é aplicada somente à simulação; não
+qualifica a configuração atual de um cluster real. Os manifests GitOps
 versionados não são modificados; o resultado é uma simulação local.
 
 O controlador deve verificar repositório, workflow, evento, run/attempt,

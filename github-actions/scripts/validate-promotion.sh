@@ -28,7 +28,8 @@ grep -F "newTag: \"$tag\"" "$work/apps/sample-api/overlays/$target_env/kustomiza
 for environment in "$source_env" "$target_env"; do
   directory="$work/apps/sample-api/overlays/$environment"
   cp "$root/github-actions/config/local-rollout-images.yaml" "$directory/local-rollout-images.yaml"
-  printf '\nconfigurations:\n  - local-rollout-images.yaml\n' >> "$directory/kustomization.yaml"
+  cp "$root/github-actions/config/local-rollout-openapi.json" "$directory/local-rollout-openapi.json"
+  printf '\nconfigurations:\n  - local-rollout-images.yaml\nopenapi:\n  path: local-rollout-openapi.json\n' >> "$directory/kustomization.yaml"
 done
 kustomize build "$work/apps/sample-api/overlays/$source_env" > "$work/source.yaml"
 grep -F "$source_name:$source_tag" "$work/source.yaml"
