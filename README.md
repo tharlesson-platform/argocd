@@ -265,3 +265,7 @@ Fonte preparada sem commit/push, API write, Docker/VM, plan/apply, credenciais
 cloud ou mudança de Root/runners. Antes do PR, requer revisão independente;
 rollback desta fase é não publicar/admitir a fonte. Este parecer local não
 certifica produção nem o estado de qualquer ambiente AWS/Kubernetes.
+
+## CI local sem AWS
+
+Consulte [a validação local gratuita](docs/validacao-local-gratuita.md). Os fluxos de build, promoção e smoke usam somente VMs descartáveis e não promovem alterações a ambientes.

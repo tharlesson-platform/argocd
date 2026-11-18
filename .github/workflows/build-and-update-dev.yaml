@@ -1,84 +1,32 @@
-name: Build Image and Update Dev Overlay
+name: Build Image and Validate Local Registry
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - apps/sample-api/app/**
-      - .github/workflows/build-and-update-dev.yaml
-      - github-actions/scripts/update_tag.sh
+    branches: [main, master]
+    paths: ["apps/sample-api/app/**", ".github/workflows/build-and-update-dev.yaml", "github-actions/scripts/**"]
+  pull_request:
   workflow_dispatch:
 
 permissions:
-  id-token: write
-  contents: write
-  pull-requests: write
+  contents: read
 
-concurrency:
-  group: dev-overlay-${{ github.ref }}
-  cancel-in-progress: false
+env:
+  SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  AWS_EC2_METADATA_DISABLED: "true"
+  AWS_SHARED_CREDENTIALS_FILE: /dev/null
+  AWS_CONFIG_FILE: /dev/null
 
 jobs:
   build-push-update:
-    if: github.event_name == 'push' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ["argocd-run-${{ github.run_id }}"]
     timeout-minutes: 30
-    env:
-      AWS_REGION: us-east-1
-      OVERLAY_ENV: dev
-      AWS_EC2_METADATA_DISABLED: "true"
-      AWS_SHARED_CREDENTIALS_FILE: /dev/null
-      AWS_CONFIG_FILE: /dev/null
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Verify rootless image builder
-        run: |
-          test "$(podman info --format '{{.Host.Security.Rootless}}')" = true
-          client_dir=$(mktemp -d "$RUNNER_TEMP/ecr-client.XXXXXXXX")
-          # The ECR login action invokes docker login/logout. Podman supports both commands.
-          ln -s "$(command -v podman)" "$client_dir/docker"
-          printf '%s\n' "$client_dir" >> "$GITHUB_PATH"
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Checkout da origem exata
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          role-to-assume: ${{ secrets.AWS_GHA_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2
-
-      - name: Build and push image
-        id: build-image
-        env:
-          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: sample-api
-          IMAGE_TAG: sha-${{ github.sha }}
-        run: |
-          [[ "$REGISTRY" =~ ^[0-9]{12}\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com$ ]]
-          image="$REGISTRY/$REPOSITORY:$IMAGE_TAG"
-          podman build --platform linux/amd64 --format docker -t "$image" apps/sample-api/app
-          podman push "$image"
-          printf 'image_tag=%s\nimage_name=%s\n' "$IMAGE_TAG" "$REGISTRY/$REPOSITORY" >> "$GITHUB_OUTPUT"
-
-      - name: Update GitOps dev tag
-        env:
-          IMAGE_TAG: ${{ steps.build-image.outputs.image_tag }}
-          IMAGE_NAME: ${{ steps.build-image.outputs.image_name }}
-        run: |
-          bash github-actions/scripts/update_tag.sh "$OVERLAY_ENV" "$IMAGE_TAG"
-          sed -i "s#<aws-account-id>.dkr.ecr.<region>.amazonaws.com/sample-api#$IMAGE_NAME#g" "apps/sample-api/overlays/$OVERLAY_ENV/kustomization.yaml"
-
-      - name: Create dev overlay PR
-        uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8
-        with:
-          base: ${{ github.ref_name }}
-          branch: automation/dev-image-${{ github.ref_name }}
-          delete-branch: true
-          title: "chore(gitops): update dev image to ${{ steps.build-image.outputs.image_tag }}"
-          commit-message: "chore(gitops): update dev image to ${{ steps.build-image.outputs.image_tag }}"
-          add-paths: apps/sample-api/overlays/dev/kustomization.yaml
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Controles de integridade OCI
+        run: python3 -m unittest discover -s github-actions/tests -v
+      - name: Build, push/pull local, SCA e smoke da imagem
+        run: bash github-actions/scripts/build-local-image.sh
