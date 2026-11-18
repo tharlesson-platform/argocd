@@ -67,3 +67,7 @@ antes do merge. Não se habilita plano pago para adicionar proteção de branch.
 Reverter a PR restaura os workflows anteriores e a dependência de AWS; não
 executa publicação nem promoção automaticamente. Não houve alteração em
 produção, estado Terraform ou overlays versionados nesta migração.
+
+As actions do workflow Terraform Plan também estão fixadas por commit SHA.
+A validação sem credenciais continua local; nenhuma role AWS é criada ou
+habilitada para executar o gate.
